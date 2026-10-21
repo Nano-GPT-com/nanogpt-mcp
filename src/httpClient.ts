@@ -120,7 +120,7 @@ export async function requestJson<T = unknown>({
   // Build headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'User-Agent': `@nanogpt/mcp/1.5.0`,
+    'User-Agent': `@nanogpt/mcp/1.5.1`,
   };
 
   // Add auth headers based on mode
@@ -251,7 +251,7 @@ export async function requestRaw({
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'User-Agent': `@nanogpt/mcp/1.5.0`,
+    'User-Agent': `@nanogpt/mcp/1.5.1`,
   };
   if (accept) headers.Accept = accept;
 

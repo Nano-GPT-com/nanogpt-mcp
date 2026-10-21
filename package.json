@@ -1,6 +1,6 @@
 {
   "name": "@nanogpt/mcp",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "MCP server for NanoGPT: chat, image, video, 3D, audio, web search and scraping tools for AI agents",
   "type": "module",
   "publishConfig": {
@@ -30,10 +30,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^3.25.76",
     "lru-cache": "^11.0.2",
-    "undici": "^6.23.0"
+    "undici": "^6.29.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
