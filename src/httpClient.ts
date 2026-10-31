@@ -43,6 +43,8 @@ export interface RequestOptions {
   body?: unknown;
   query?: Record<string, string>;
   timeoutMs?: number;
+  /** Extra request headers; they cannot replace the authentication headers. */
+  headers?: Record<string, string>;
 }
 
 export interface RawRequestOptions extends RequestOptions {
@@ -104,6 +106,7 @@ export async function requestJson<T = unknown>({
   body,
   query,
   timeoutMs,
+  headers: extraHeaders,
 }: RequestOptions): Promise<HttpResponse<T>> {
   const config = getConfig();
   const timeout = timeoutMs ?? config.timeoutMs;
@@ -120,7 +123,8 @@ export async function requestJson<T = unknown>({
   // Build headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'User-Agent': `@nanogpt/mcp/1.5.1`,
+    'User-Agent': `@nanogpt/mcp/1.6.0`,
+    ...extraHeaders,
   };
 
   // Add auth headers based on mode
@@ -182,6 +186,9 @@ export async function requestJson<T = unknown>({
         const obj = json as Record<string, unknown>;
         if (typeof obj.code === 'string') {
           error.code = obj.code;
+        } else if (typeof obj.error === 'object' && obj.error !== null
+          && typeof (obj.error as Record<string, unknown>).code === 'string') {
+          error.code = (obj.error as Record<string, unknown>).code as string;
         }
       }
 
@@ -251,7 +258,7 @@ export async function requestRaw({
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'User-Agent': `@nanogpt/mcp/1.5.1`,
+    'User-Agent': `@nanogpt/mcp/1.6.0`,
   };
   if (accept) headers.Accept = accept;
 

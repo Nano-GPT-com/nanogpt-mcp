@@ -60,6 +60,7 @@ Then ask your agent, for example: *"Use NanoGPT to generate a 5 second video of 
 | Web and research | `nanogpt_web_search`, `nanogpt_scrape_urls`, `nanogpt_firecrawl`, `nanogpt_youtube_transcribe`, `nanogpt_x_research`, `nanogpt_hunter` |
 | Social and maps data | `nanogpt_reddit`, `nanogpt_google_maps_scrape`, `nanogpt_google_maps_reviews_scrape`, `nanogpt_facebook_ads`, `nanogpt_facebook_posts_scrape`, `nanogpt_instagram_profile`, `nanogpt_instagram_posts_scrape`, `nanogpt_instagram_reels`, `nanogpt_linkedin_profile`, `nanogpt_tiktok_scrape` |
 | Model catalogs (free) | `nanogpt_list_text_models`, `nanogpt_list_image_models`, `nanogpt_list_video_models`, `nanogpt_list_3d_models`, `nanogpt_list_audio_models` |
+| Feedback (free) | `nanogpt_send_feedback`, `nanogpt_get_feedback` |
 
 Each tool describes its parameters to the agent through MCP, so the agent can call them without reading the API documentation.
 
@@ -72,6 +73,10 @@ Video and 3D jobs run asynchronously and usually take between 30 seconds and sev
 - `operation: "submit"` only submits the job.
 
 Many MCP clients stop a tool call after 60 seconds, so keep `timeout_ms` below your client's tool timeout and use `poll` for long jobs. Use `nanogpt_list_video_models` and `nanogpt_list_3d_models` to find model ids, prices and whether a model accepts text, images or both.
+
+### Feedback
+
+`nanogpt_send_feedback` sends a bug report, feature request, documentation issue or model-quality report to the NanoGPT team, and `nanogpt_get_feedback` reads its status and the team's latest reply. Reports are private and free, but the account (or the team that pays for it) needs a balance or an active subscription, and each account can send 20 a day. Ask your agent to report something, or let it report a reproducible NanoGPT problem that blocks its task. Reports never include your API key; don't put passwords, personal data or full prompts in them.
 
 ### Large outputs
 
@@ -95,7 +100,7 @@ Large responses (raw JSON, generated images and audio) are returned as `resource
 
 ## Billing
 
-Paid tools deduct from your NanoGPT balance at the prices shown on [nano-gpt.com](https://nano-gpt.com) and by the model listing tools. Model listings and `nanogpt_get_balance` are free. A video or 3D job is charged when it is submitted, so prefer `poll` over submitting the same job again.
+Paid tools deduct from your NanoGPT balance at the prices shown on [nano-gpt.com](https://nano-gpt.com) and by the model listing tools. Model listings, `nanogpt_get_balance` and the feedback tools are free. A video or 3D job is charged when it is submitted, so prefer `poll` over submitting the same job again.
 
 ## Troubleshooting
 

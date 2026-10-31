@@ -41,6 +41,8 @@ function readJson(req) {
 }
 
 const videoStatusPolls = new Map();
+const feedbackRequests = [];
+const FEEDBACK_ID = '10000000-0000-4000-8000-000000000001';
 
 async function startMockNanoGptServer() {
   const server = http.createServer(async (req, res) => {
@@ -390,6 +392,33 @@ async function startMockNanoGptServer() {
       return;
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/v1/feedback') {
+      const body = await readJson(req);
+      feedbackRequests.push({ headers: req.headers, body });
+      if (body.title === 'Unfunded account report') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: {
+          type: 'invalid_request_error', code: 'feedback_requires_funded_account',
+          message: 'API feedback needs an account with a balance or an active subscription.',
+        } }));
+        return;
+      }
+      res.statusCode = 201;
+      res.setHeader('location', `/api/v1/feedback/${FEEDBACK_ID}`);
+      res.end(JSON.stringify({ id: FEEDBACK_ID, object: 'feedback', status: 'pending', visibility: 'private', created_at: '2026-10-31T12:00:00.000Z' }));
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === `/api/v1/feedback/${FEEDBACK_ID}`) {
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        id: FEEDBACK_ID, object: 'feedback', type: 'bug', title: 'Tool call stopped', status: 'in-progress',
+        visibility: 'private', created_at: '2026-10-31T12:00:00.000Z', updated_at: '2026-10-31T13:00:00.000Z',
+        delete_after: null, latest_response: { id: 'reply-1', content: 'Thanks, we can reproduce it.', created_at: '2026-10-31T13:00:00.000Z' },
+      }));
+      return;
+    }
+
     res.statusCode = 404;
     res.end(JSON.stringify({ error: { message: `Not found: ${req.method} ${url.pathname}` } }));
   });
@@ -583,11 +612,11 @@ describe('NanoGPT MCP Server', () => {
     assert.ok(client.initialized, 'Client should be marked as initialized');
   });
 
-  test('should list all 34 tools', async () => {
+  test('should list all 36 tools', async () => {
     const response = await client.listTools();
     assert.ok(response.result, 'Response should have result');
     assert.ok(Array.isArray(response.result.tools), 'Tools should be an array');
-    assert.strictEqual(response.result.tools.length, 34, 'Should have 34 tools');
+    assert.strictEqual(response.result.tools.length, 36, 'Should have 36 tools');
 
     const toolNames = response.result.tools.map((t) => t.name).sort();
     const expectedTools = [
@@ -601,6 +630,7 @@ describe('NanoGPT MCP Server', () => {
       'nanogpt_facebook_posts_scrape',
       'nanogpt_firecrawl',
       'nanogpt_get_balance',
+      'nanogpt_get_feedback',
       'nanogpt_google_maps_reviews_scrape',
       'nanogpt_google_maps_scrape',
       'nanogpt_hunter',
@@ -618,6 +648,7 @@ describe('NanoGPT MCP Server', () => {
       'nanogpt_music_generate',
       'nanogpt_reddit',
       'nanogpt_scrape_urls',
+      'nanogpt_send_feedback',
       'nanogpt_text_to_speech',
       'nanogpt_tiktok_scrape',
       'nanogpt_video_generate',
@@ -652,6 +683,58 @@ describe('NanoGPT MCP Server', () => {
     );
     assert.ok(!textItem.text.includes('COMPLETE_CONTENT'), 'Text should not duplicate plain text when markdown is available');
     assert.ok(textItem.text.includes('Summary: 1 succeeded, 0 failed'), 'Text should include the scrape summary');
+  });
+
+  test('nanogpt_send_feedback should submit a private report with a fresh idempotency key per call', async () => {
+    feedbackRequests.length = 0;
+    const report = {
+      type: 'bug', title: 'Tool call stopped', description: 'The tool call arguments never finished streaming.',
+      request_id: 'req_abc123', endpoint: '/api/v1/chat/completions', model: 'gpt-4.1-nano',
+    };
+    const first = await client.callTool('nanogpt_send_feedback', report);
+    const second = await client.callTool('nanogpt_send_feedback', report);
+    assert.ok(first.result && !first.result.isError, `Should succeed, got: ${JSON.stringify(first)}`);
+    assert.deepStrictEqual(first.result.structuredContent, { id: FEEDBACK_ID, status: 'pending', created_at: '2026-10-31T12:00:00.000Z' });
+    assert.ok(first.result.content[0].text.includes(FEEDBACK_ID), 'Text should name the report ID');
+    assert.ok(second.result && !second.result.isError, 'Second report should succeed');
+
+    assert.strictEqual(feedbackRequests.length, 2);
+    const [a, b] = feedbackRequests;
+    assert.deepStrictEqual(a.body, report, 'Body should be exactly the report fields');
+    assert.match(a.headers['idempotency-key'], /^mcp-[0-9a-f-]{36}$/);
+    assert.notStrictEqual(a.headers['idempotency-key'], b.headers['idempotency-key'], 'Each call should get its own key');
+    assert.strictEqual(a.headers.authorization, 'Bearer test-key');
+    assert.match(a.headers['content-type'], /^application\/json/);
+  });
+
+  test('nanogpt_send_feedback should reject invalid reports before calling the API', async () => {
+    feedbackRequests.length = 0;
+    const response = await client.callTool('nanogpt_send_feedback', { type: 'bug', title: 'Bug', description: 'short' });
+    const message = response.error ? String(response.error.message) : String(response.result?.content?.[0]?.text);
+    assert.ok(response.error || response.result?.isError, 'Should fail');
+    assert.match(message, /title|description/);
+    assert.strictEqual(feedbackRequests.length, 0, 'Nothing should be sent');
+  });
+
+  test('nanogpt_send_feedback should explain why an unfunded account is refused', async () => {
+    const response = await client.callTool('nanogpt_send_feedback', {
+      type: 'feature_request', title: 'Unfunded account report', description: 'Please add a model filter to the catalog.',
+    });
+    const message = response.error ? String(response.error.message) : String(response.result?.content?.[0]?.text);
+    assert.ok(response.error || response.result?.isError, 'Should fail');
+    assert.match(message, /balance or an active subscription/);
+  });
+
+  test('nanogpt_get_feedback should return status and the latest team reply', async () => {
+    const response = await client.callTool('nanogpt_get_feedback', { id: FEEDBACK_ID });
+    assert.ok(response.result && !response.result.isError, `Should succeed, got: ${JSON.stringify(response)}`);
+    const structured = response.result.structuredContent;
+    assert.strictEqual(structured.status, 'in-progress');
+    assert.strictEqual(structured.latest_response.content, 'Thanks, we can reproduce it.');
+    assert.ok(response.result.content[0].text.includes('Thanks, we can reproduce it.'));
+
+    const invalid = await client.callTool('nanogpt_get_feedback', { id: '../../check-balance' });
+    assert.ok(invalid.error || invalid.result?.isError, 'A non-UUID id should be rejected');
   });
 
   test('nanogpt_get_balance should return balance info', async () => {

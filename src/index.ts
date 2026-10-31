@@ -12,6 +12,7 @@
  * - Embeddings, audio/music, video, image editing, AI QR, and AI detection
  * - YouTube transcription
  * - Model listing
+ * - Feedback to the NanoGPT team
  *
  * Uses stdio transport for communication with MCP clients.
  *
@@ -58,6 +59,8 @@ import {
   listAudioModels,
   listVideoModels,
   list3dModels,
+  sendFeedback,
+  getFeedback,
 } from './tools/index.js';
 
 /**
@@ -71,7 +74,7 @@ async function main() {
   // Create MCP server
   const server = new McpServer({
     name: 'nanogpt-mcp',
-    version: '1.5.1',
+    version: '1.6.0',
   });
 
   // Register tools
@@ -129,6 +132,8 @@ function registerTools(server: McpServer) {
     listAudioModels,
     listVideoModels,
     list3dModels,
+    sendFeedback,
+    getFeedback,
   ];
 
   for (const tool of tools) {

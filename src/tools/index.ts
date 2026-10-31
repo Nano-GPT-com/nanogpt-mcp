@@ -37,4 +37,5 @@ export {
   videoGenerate,
   model3dGenerate,
 } from './generationExtras.js';
+export { sendFeedback, getFeedback } from './feedback.js';
 export { listTextModels, listImageModels, listAudioModels, listVideoModels, list3dModels } from './listModels.js';
