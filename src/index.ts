@@ -74,7 +74,7 @@ async function main() {
   // Create MCP server
   const server = new McpServer({
     name: 'nanogpt-mcp',
-    version: '1.6.0',
+    version: '1.7.0',
   });
 
   // Register tools

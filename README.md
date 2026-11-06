@@ -87,7 +87,7 @@ Large responses (raw JSON, generated images and audio) are returned as `resource
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NANOGPT_API_KEY` | (required) | Your NanoGPT API key |
-| `NANOGPT_BASE_URL` | `https://nano-gpt.com` | API base URL |
+| `NANOGPT_BASE_URL` | `https://api.nano-gpt.com` | API base URL. That host has no IPv6 address, so clients with only IPv6 should set `https://nano-gpt.com`. |
 | `NANOGPT_AUTH_MODE` | `bearer` | `bearer`, `x-api-key` or `both` |
 | `NANOGPT_TIMEOUT_MS` | `120000` | Default HTTP request timeout |
 | `NANOGPT_DEFAULT_MODEL` | (none) | Default model for `nanogpt_chat` |

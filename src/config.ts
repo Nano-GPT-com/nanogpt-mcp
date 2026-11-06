@@ -30,7 +30,7 @@ let config: Config | null = null;
  * Fails fast with clear error messages (never prints API key).
  */
 export function loadConfig(): Config {
-  const baseUrl = process.env.NANOGPT_BASE_URL || 'https://nano-gpt.com';
+  const baseUrl = process.env.NANOGPT_BASE_URL || 'https://api.nano-gpt.com';
   const apiKey = process.env.NANOGPT_API_KEY;
 
   // Required variables
